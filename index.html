@@ -383,17 +383,6 @@
         .chat-messages::-webkit-scrollbar-thumb:hover {
             background: var(--secondary-color);
         }
-        
-        /* Premium animations */
-        @keyframes pulse {
-            0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.4); }
-            70% { box-shadow: 0 0 0 10px rgba(255, 215, 0, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
-        }
-        
-        .pulse-animation {
-            animation: pulse 2s infinite;
-        }
     </style>
 </head>
 <body>
@@ -441,7 +430,7 @@
         <div class="chat-input-container">
             <div class="chat-input">
                 <input type="text" id="messageInput" class="message-input" placeholder="Send a Message">
-                <button id="sendButton" class="send-button pulse-animation">
+                <button id="sendButton" class="send-button">
                     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <line x1="22" y1="2" x2="11" y2="13"></line>
                         <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
@@ -475,30 +464,33 @@
         const chatMessages = document.getElementById('chatMessages');
         const messageInput = document.getElementById('messageInput');
         const sendButton = document.getElementById('sendButton');
+        const partnerStatus = document.getElementById('partnerStatus');
+        const typingIndicator = document.getElementById('typingIndicator');
+        const typingText = document.getElementById('typingText');
         
         // Global variables
         let currentUser = null;
         let chatRoomId = null;
         let partnerId = null;
         let partnerName = null;
+        let stopTypingTimeout = null;
+        let messagesListener = null;
         
-        // Exclusive users
-        const EXCLUSIVE_USERS = {
-            'rinu@gmail.com': { password: '123456', uid: 'userRina', name: 'Rina', avatar: 'R' },
-            'faamil@gmail.com': { password: '123456', uid: 'userFaamil', name: 'Faamil', avatar: 'F' }
+        // User credentials - only these two can access
+        const USER_CREDENTIALS = {
+            'rinu@gmail.com': { password: '123456', name: 'Rina', avatar: 'R' },
+            'faamil@gmail.com': { password: '123456', name: 'Faamil', avatar: 'F' }
         };
         
         // Initialize the application
         function init() {
-            console.log("Initializing app...");
             auth.onAuthStateChanged((user) => {
-                if (user && EXCLUSIVE_USERS[user.email]) {
-                    console.log("User already logged in:", user.email);
+                if (user && USER_CREDENTIALS[user.email]) {
                     currentUser = user;
                     setupChat();
                 } else {
-                    console.log("No user logged in or not authorized");
                     showLogin();
+                    if (user) auth.signOut();
                 }
             });
             
@@ -507,6 +499,7 @@
             messageInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') sendMessage();
             });
+            messageInput.addEventListener('input', handleTyping);
         }
         
         function handleLogin(e) {
@@ -514,12 +507,12 @@
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             
-            if (!EXCLUSIVE_USERS[email]) {
-                showLoginError('Access denied.');
+            if (!USER_CREDENTIALS[email]) {
+                showLoginError('Access denied. Only special people allowed 😉');
                 return;
             }
             
-            if (EXCLUSIVE_USERS[email].password === password) {
+            if (USER_CREDENTIALS[email].password === password) {
                 auth.signInWithEmailAndPassword(email, password)
                     .then((userCredential) => {
                         currentUser = userCredential.user;
@@ -527,10 +520,10 @@
                         setupChat();
                     })
                     .catch((error) => {
-                        showLoginError('Authentication failed: ' + error.message);
+                        showLoginError('Login failed: ' + error.message);
                     });
             } else {
-                showLoginError('Wrong Password vaave... Try Again.');
+                showLoginError('Wrong password! Try again ❤️');
             }
         }
         
@@ -549,80 +542,89 @@
         }
         
         function setupChat() {
-    console.log("Setting up chat for user:", currentUser.email);
-    loginContainer.classList.add('hidden');
-    chatContainer.classList.remove('hidden');
-    
-    // Use a fixed chat room ID that both users share
-    chatRoomId = "rina_faamil_chat_room";
-    
-    // Set partner info based on current user
-    if (currentUser.email === 'rinu@gmail.com') {
-        partnerName = 'Faamil';
-        partnerId = 'Lpx8gfn5fzbAa7ZLh7gfxXPzX7v2'; // This identifies her messages
-        document.getElementById('partnerAvatar').textContent = 'F';
-    } else {
-        partnerName = 'Rina';
-        partnerId = 'Fn3I5FUBINMnJ1y6sXAM6Zl9e3S2'; // This identifies your messages
-        document.getElementById('partnerAvatar').textContent = 'R';
-    }
-    
-    document.getElementById('partnerName').textContent = partnerName;
-    console.log("Chat room ID:", chatRoomId);
-    
-    loadMessages();
-    setupRealtimeListeners();
-}
+            loginContainer.classList.add('hidden');
+            chatContainer.classList.remove('hidden');
+            
+            // Request notification permission
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+            
+            // Fixed chat room for both users
+            chatRoomId = "rina_faamil_secret_chat";
+            
+            // Set partner info
+            if (currentUser.email === 'rinu@gmail.com') {
+                partnerName = 'Faamil';
+                partnerId = 'faamil';
+                document.getElementById('partnerAvatar').textContent = 'F';
+            } else {
+                partnerName = 'Rina';
+                partnerId = 'rina';
+                document.getElementById('partnerAvatar').textContent = 'R';
+            }
+            
+            document.getElementById('partnerName').textContent = partnerName;
+            
+            loadMessages();
+            setupRealtimeListeners();
+        }
         
         function loadMessages() {
-            console.log("Loading messages for room:", chatRoomId);
             chatMessages.innerHTML = '';
             
             // Welcome message
             displayMessage({
-                text: `Welcome my lovely ${currentUser.email.split('@')[0]}!`,
+                text: `Welcome to your secret chat, ${currentUser.email.split('@')[0]}! 💖`,
                 senderId: 'system',
-                timestamp: Date.now(),
-                read: true
+                timestamp: Date.now()
             });
             
-            // Try to load from Firestore
+            // Load messages from Firestore
             db.collection('messages')
                 .where('roomId', '==', chatRoomId)
                 .orderBy('timestamp', 'asc')
                 .get()
                 .then((querySnapshot) => {
-                    console.log("Found", querySnapshot.size, "messages in Firestore");
-                    if (querySnapshot.size === 0) {
-                        console.log("No messages found, this is normal for first use");
-                    }
                     querySnapshot.forEach((doc) => {
                         displayMessage(doc.data());
                     });
+                    scrollToBottom();
                 })
                 .catch((error) => {
-                    console.error("Firestore error:", error);
-                    showLoginError('Database error: ' + error.message);
+                    console.error("Error loading messages:", error);
                 });
         }
         
         function setupRealtimeListeners() {
-            console.log("Setting up realtime listener for room:", chatRoomId);
-            
-            db.collection('messages')
+            messagesListener = db.collection('messages')
                 .where('roomId', '==', chatRoomId)
                 .orderBy('timestamp', 'asc')
                 .onSnapshot((querySnapshot) => {
-                    console.log("Realtime update received:", querySnapshot.size, "messages");
                     querySnapshot.docChanges().forEach((change) => {
                         if (change.type === 'added') {
-                            console.log("New message:", change.doc.data());
-                            displayMessage(change.doc.data());
+                            const message = change.doc.data();
+                            
+                            // Show notification if message is from partner and tab is not focused
+                            if (message.senderId !== currentUser.uid && document.hidden) {
+                                showNotification('New message 💌', message.text);
+                            }
+                            
+                            displayMessage(message);
                         }
                     });
-                }, (error) => {
-                    console.error("Realtime listener error:", error);
                 });
+        }
+        
+        function handleTyping() {
+            // Show typing indicator
+            typingText.textContent = USER_CREDENTIALS[currentUser.email].name;
+            typingIndicator.style.display = 'flex';
+            
+            clearTimeout(stopTypingTimeout);
+            stopTypingTimeout = setTimeout(() => {
+                typingIndicator.style.display = 'none';
+            }, 2000);
         }
         
         function sendMessage() {
@@ -637,68 +639,70 @@
                 read: false
             };
             
-            console.log("Sending message:", message);
-            
             db.collection('messages').add(message)
                 .then(() => {
-                    console.log("Message sent successfully");
                     messageInput.value = '';
+                    typingIndicator.style.display = 'none';
                 })
                 .catch((error) => {
                     console.error("Error sending message:", error);
-                    alert('Send error: ' + error.message);
+                    alert('Failed to send message. Try again.');
                 });
         }
         
         function displayMessage(message) {
-    const messageElement = document.createElement('div');
-    messageElement.classList.add('message');
-    
-    // Determine if message is outgoing (current user) or incoming (partner)
-    const isOutgoing = message.senderId === currentUser.uid;
-    messageElement.classList.add(isOutgoing ? 'outgoing' : 'incoming');
-    
-    // Handle system messages differently
-    if (message.senderId === 'system') {
-        messageElement.classList.add('incoming');
-        messageElement.style.alignSelf = 'center';
-        messageElement.style.maxWidth = '90%';
-        messageElement.style.margin = '20px auto';
-        messageElement.style.textAlign = 'center';
-        messageElement.style.fontStyle = 'italic';
-        messageElement.style.opacity = '0.8';
-    }
-    
-    const bubble = document.createElement('div');
-    bubble.classList.add('message-bubble');
-    bubble.textContent = message.text;
-    
-    const info = document.createElement('div');
-    info.classList.add('message-info');
-    
-    const time = new Date(message.timestamp);
-    const timeString = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    
-    // Show read status only for outgoing messages
-    if (isOutgoing) {
-        info.innerHTML = `
-            <span class="message-time">${timeString}</span>
-            <span class="message-status">${message.read ? '✓✓' : '✓'}</span>
-        `;
-    } else {
-        info.innerHTML = `<span class="message-time">${timeString}</span>`;
-    }
-    
-    messageElement.appendChild(bubble);
-    messageElement.appendChild(info);
-    chatMessages.appendChild(messageElement);
-    
-    scrollToBottom();
-}
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message');
+            
+            const isOutgoing = message.senderId === currentUser.uid;
+            const isSystem = message.senderId === 'system';
+            
+            messageElement.classList.add(isOutgoing ? 'outgoing' : 'incoming');
+            
+            if (isSystem) {
+                messageElement.style.alignSelf = 'center';
+                messageElement.style.textAlign = 'center';
+                messageElement.style.fontStyle = 'italic';
+                messageElement.style.opacity = '0.8';
+            }
+            
+            const bubble = document.createElement('div');
+            bubble.classList.add('message-bubble');
+            bubble.textContent = message.text;
+            
+            const info = document.createElement('div');
+            info.classList.add('message-info');
+            
+            const time = new Date(message.timestamp);
+            const timeString = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            if (isOutgoing) {
+                info.innerHTML = `
+                    <span class="message-time">${timeString}</span>
+                    <span class="message-status">${message.read ? '✓✓' : '✓'}</span>
+                `;
+            } else if (!isSystem) {
+                info.innerHTML = `<span class="message-time">${timeString}</span>`;
+            }
+            
+            messageElement.appendChild(bubble);
+            if (!isSystem) messageElement.appendChild(info);
+            chatMessages.appendChild(messageElement);
+            
+            scrollToBottom();
+        }
+        
+        function showNotification(title, body) {
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification(title, { body: body, icon: 'https://example.com/icon.png' });
+            }
+        }
+        
         function scrollToBottom() {
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
         
+        // Initialize the app
         document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
