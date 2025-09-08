@@ -513,7 +513,6 @@
                 } else {
                     showLogin();
                     if (user) {
-                        // Log out if user is not in exclusive list
                         auth.signOut();
                     }
                 }
@@ -540,15 +539,12 @@
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             
-            // Check if user is in exclusive list
             if (!EXCLUSIVE_USERS[email]) {
                 showLoginError('Access denied. Exclusive premium users only.');
                 return;
             }
             
-            // Validate credentials
             if (EXCLUSIVE_USERS[email].password === password) {
-                // Sign in with Firebase
                 auth.signInWithEmailAndPassword(email, password)
                     .then((userCredential) => {
                         currentUser = userCredential.user;
@@ -622,10 +618,9 @@
         
         // Load previous messages from Firestore
         function loadMessages() {
-            // Clear existing messages
             chatMessages.innerHTML = '';
             
-            // Add welcome message
+            // Welcome message
             const welcomeMessage = {
                 text: `Welcome to your exclusive premium chat, ${currentUser.email.split('@')[0]}! 🎉`,
                 senderId: 'system',
@@ -634,75 +629,31 @@
             };
             displayMessage(welcomeMessage);
             
-            // Load actual messages from Firestore
+            // Load messages from Firestore
             db.collection('messages')
                 .where('roomId', '==', chatRoomId)
                 .orderBy('timestamp', 'asc')
                 .get()
                 .then((querySnapshot) => {
-                    if (querySnapshot.empty) {
-                        // Add sample messages if no messages exist
-                        const sampleMessages = [
-                            {
-                                text: 'Hey there! How are you?',
-                                senderId: partnerId,
-                                timestamp: Date.now() - 3600000,
-                                read: true,
-                                roomId: chatRoomId
-                            },
-                            {
-                                text: "I'm doing great! Just setting up our premium chat.",
-                                senderId: currentUser.uid,
-                                timestamp: Date.now() - 3500000,
-                                read: true,
-                                roomId: chatRoomId
-                            },
-                            {
-                                text: 'This looks amazing! Love the premium design. ✨',
-                                senderId: partnerId,
-                                timestamp: Date.now() - 3400000,
-                                read: true,
-                                roomId: chatRoomId
-                            }
-                        ];
-                        
-                        // Add sample messages to Firestore
-                        sampleMessages.forEach(message => {
-                            db.collection('messages').add(message);
-                        });
-                        
-                        // Display sample messages
-                        sampleMessages.forEach(message => {
-                            displayMessage(message);
-                        });
-                    } else {
-                        // Display existing messages
-                        querySnapshot.forEach((doc) => {
-                            displayMessage(doc.data());
-                        });
-                    }
+                    querySnapshot.forEach((doc) => {
+                        displayMessage(doc.data());
+                    });
                     scrollToBottom();
                 })
                 .catch((error) => {
-                    console.log('Error loading messages:', error);
-                    showLoginError('Error loading messages. Please refresh.');
+                    console.error('Error loading messages:', error);
                 });
         }
         
         // Set up realtime listeners for new messages
         function setupRealtimeListeners() {
-            // Listen for new messages
             messagesListener = db.collection('messages')
                 .where('roomId', '==', chatRoomId)
                 .orderBy('timestamp', 'asc')
                 .onSnapshot((querySnapshot) => {
                     querySnapshot.docChanges().forEach((change) => {
                         if (change.type === 'added') {
-                            // Don't display the message if it's already shown
-                            const messageId = change.doc.id;
-                            if (!document.getElementById(`msg-${messageId}`)) {
-                                displayMessage(change.doc.data(), messageId);
-                            }
+                            displayMessage(change.doc.data());
                         }
                     });
                 }, (error) => {
@@ -714,12 +665,10 @@
         function handleTyping() {
             simulateTyping(EXCLUSIVE_USERS[currentUser.email].name, true);
             
-            // Clear previous timeout
             if (stopTypingTimeout) {
                 clearTimeout(stopTypingTimeout);
             }
             
-            // Set timeout to stop typing indicator
             stopTypingTimeout = setTimeout(() => {
                 simulateTyping(EXCLUSIVE_USERS[currentUser.email].name, false);
             }, 2000);
@@ -741,7 +690,6 @@
             
             if (messageText === '') return;
             
-            // Create message object
             const message = {
                 text: messageText,
                 senderId: currentUser.uid,
@@ -750,30 +698,24 @@
                 read: false
             };
             
-            // Add to Firestore
             db.collection('messages').add(message)
                 .then(() => {
-                    // Clear input
                     messageInput.value = '';
                 })
                 .catch((error) => {
                     console.error('Error sending message:', error);
-                    alert('Error sending message. Please try again.');
+                    alert('Error sending message: ' + error.message);
                 });
         }
         
         // Display a message in the chat
-        function displayMessage(message, messageId = null) {
+        function displayMessage(message) {
             const messageElement = document.createElement('div');
             messageElement.classList.add('message');
-            if (messageId) {
-                messageElement.id = `msg-${messageId}`;
-            }
             
             if (message.senderId === currentUser.uid) {
                 messageElement.classList.add('outgoing');
             } else if (message.senderId === 'system') {
-                // System message
                 messageElement.classList.add('incoming');
                 messageElement.style.alignSelf = 'center';
                 messageElement.style.maxWidth = '90%';
