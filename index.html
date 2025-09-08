@@ -579,7 +579,7 @@
             
             // Welcome message
             displayMessage({
-                text: `Welcome to your secret chat, ${currentUser.email.split('@')[0]}! 💖`,
+                text: `Welcome My Lovely ${currentUser.email.split('@')[0]}! 💖`,
                 senderId: 'system',
                 timestamp: Date.now()
             });
@@ -722,10 +722,15 @@
         }
         
         function showNotification(title, body) {
-            if ('Notification' in window && Notification.permission === 'granted') {
-                new Notification(title, { body: body });
-            }
-        }
+    if ('Notification' in window && Notification.permission === 'granted') {
+        // Play sound
+        const audio = new Audio('noti.wav');
+        audio.play().catch(e => console.log('Audio play failed:', e));
+        
+        // Show notification
+        new Notification(title, { body: body });
+    }
+}
         
         function scrollToBottom() {
             chatMessages.scrollTop = chatMessages.scrollHeight;
