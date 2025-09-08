@@ -557,6 +557,7 @@
                     })
                     .catch((error) => {
                         showLoginError('Authentication failed. Please try again.');
+                        console.error('Login error:', error);
                     });
             } else {
                 showLoginError('Invalid credentials for premium access.');
@@ -585,24 +586,38 @@
             loginContainer.classList.add('hidden');
             chatContainer.classList.remove('hidden');
             
-            // Determine who the partner is
+            // Determine who the partner is based on current user
             const userEmail = currentUser.email;
-            partnerId = userEmail === 'rina@example.com' ? 'userFaamil' : 'userRina';
-            partnerName = EXCLUSIVE_USERS[userEmail === 'rina@example.com' ? 'faamil@example.com' : 'rina@example.com'].name;
             
-            // Update UI with partner info
-            document.getElementById('partnerName').textContent = partnerName;
-            document.getElementById('partnerAvatar').textContent = 
-                EXCLUSIVE_USERS[userEmail === 'rina@example.com' ? 'faamil@example.com' : 'rina@example.com'].avatar;
+            // Find the partner (the other user in EXCLUSIVE_USERS)
+            let partnerEmail = null;
+            for (const email in EXCLUSIVE_USERS) {
+                if (email !== userEmail) {
+                    partnerEmail = email;
+                    break;
+                }
+            }
             
-            // Generate a consistent chat room ID
-            chatRoomId = [currentUser.uid, partnerId].sort().join('_');
-            
-            // Load previous messages
-            loadMessages();
-            
-            // Set up realtime listeners
-            setupRealtimeListeners();
+            if (partnerEmail) {
+                partnerId = EXCLUSIVE_USERS[partnerEmail].uid;
+                partnerName = EXCLUSIVE_USERS[partnerEmail].name;
+                
+                // Update UI with partner info
+                document.getElementById('partnerName').textContent = partnerName;
+                document.getElementById('partnerAvatar').textContent = EXCLUSIVE_USERS[partnerEmail].avatar;
+                
+                // Generate a consistent chat room ID
+                chatRoomId = [currentUser.uid, partnerId].sort().join('_');
+                
+                // Load previous messages
+                loadMessages();
+                
+                // Set up realtime listeners
+                setupRealtimeListeners();
+            } else {
+                showLoginError('Could not find chat partner.');
+                auth.signOut();
+            }
         }
         
         // Load previous messages from Firestore
@@ -625,13 +640,52 @@
                 .orderBy('timestamp', 'asc')
                 .get()
                 .then((querySnapshot) => {
-                    querySnapshot.forEach((doc) => {
-                        displayMessage(doc.data());
-                    });
+                    if (querySnapshot.empty) {
+                        // Add sample messages if no messages exist
+                        const sampleMessages = [
+                            {
+                                text: 'Hey there! How are you?',
+                                senderId: partnerId,
+                                timestamp: Date.now() - 3600000,
+                                read: true,
+                                roomId: chatRoomId
+                            },
+                            {
+                                text: "I'm doing great! Just setting up our premium chat.",
+                                senderId: currentUser.uid,
+                                timestamp: Date.now() - 3500000,
+                                read: true,
+                                roomId: chatRoomId
+                            },
+                            {
+                                text: 'This looks amazing! Love the premium design. ✨',
+                                senderId: partnerId,
+                                timestamp: Date.now() - 3400000,
+                                read: true,
+                                roomId: chatRoomId
+                            }
+                        ];
+                        
+                        // Add sample messages to Firestore
+                        sampleMessages.forEach(message => {
+                            db.collection('messages').add(message);
+                        });
+                        
+                        // Display sample messages
+                        sampleMessages.forEach(message => {
+                            displayMessage(message);
+                        });
+                    } else {
+                        // Display existing messages
+                        querySnapshot.forEach((doc) => {
+                            displayMessage(doc.data());
+                        });
+                    }
                     scrollToBottom();
                 })
                 .catch((error) => {
                     console.log('Error loading messages:', error);
+                    showLoginError('Error loading messages. Please refresh.');
                 });
         }
         
@@ -644,9 +698,15 @@
                 .onSnapshot((querySnapshot) => {
                     querySnapshot.docChanges().forEach((change) => {
                         if (change.type === 'added') {
-                            displayMessage(change.doc.data());
+                            // Don't display the message if it's already shown
+                            const messageId = change.doc.id;
+                            if (!document.getElementById(`msg-${messageId}`)) {
+                                displayMessage(change.doc.data(), messageId);
+                            }
                         }
                     });
+                }, (error) => {
+                    console.error('Error in realtime listener:', error);
                 });
         }
         
@@ -698,13 +758,17 @@
                 })
                 .catch((error) => {
                     console.error('Error sending message:', error);
+                    alert('Error sending message. Please try again.');
                 });
         }
         
         // Display a message in the chat
-        function displayMessage(message) {
+        function displayMessage(message, messageId = null) {
             const messageElement = document.createElement('div');
             messageElement.classList.add('message');
+            if (messageId) {
+                messageElement.id = `msg-${messageId}`;
+            }
             
             if (message.senderId === currentUser.uid) {
                 messageElement.classList.add('outgoing');
