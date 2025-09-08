@@ -94,12 +94,12 @@
         }
         
         .presence {
-            font-size: 0.8rem;
-            color: var(--secondary-color);
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
+    font-size: 0.8rem;
+    color: var(--secondary-color);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
         
         .online-dot {
             width: 8px;
@@ -475,6 +475,7 @@
         let partnerName = null;
         let stopTypingTimeout = null;
         let messagesListener = null;
+        let displayedMessageIds = new Set();
         
         // User credentials - only these two can access
         const USER_CREDENTIALS = {
@@ -545,6 +546,9 @@
             loginContainer.classList.add('hidden');
             chatContainer.classList.remove('hidden');
             
+            // Reset displayed messages
+            displayedMessageIds.clear();
+            
             // Request notification permission
             if ('Notification' in window && Notification.permission === 'default') {
                 Notification.requestPermission();
@@ -587,7 +591,9 @@
                 .get()
                 .then((querySnapshot) => {
                     querySnapshot.forEach((doc) => {
-                        displayMessage(doc.data());
+                        const message = doc.data();
+                        displayedMessageIds.add(doc.id);
+                        displayMessage(message, doc.id);
                     });
                     scrollToBottom();
                 })
@@ -597,6 +603,11 @@
         }
         
         function setupRealtimeListeners() {
+            // Remove any existing listener
+            if (messagesListener) {
+                messagesListener();
+            }
+            
             messagesListener = db.collection('messages')
                 .where('roomId', '==', chatRoomId)
                 .orderBy('timestamp', 'asc')
@@ -604,15 +615,23 @@
                     querySnapshot.docChanges().forEach((change) => {
                         if (change.type === 'added') {
                             const message = change.doc.data();
+                            const messageId = change.doc.id;
                             
-                            // Show notification if message is from partner and tab is not focused
-                            if (message.senderId !== currentUser.uid && document.hidden) {
-                                showNotification('New message 💌', message.text);
+                            // Prevent duplicate messages
+                            if (!displayedMessageIds.has(messageId)) {
+                                displayedMessageIds.add(messageId);
+                                
+                                // Show notification if message is from partner and tab is not focused
+                                if (message.senderId !== currentUser.uid && document.hidden) {
+                                    showNotification('New message 💌', message.text);
+                                }
+                                
+                                displayMessage(message, messageId);
                             }
-                            
-                            displayMessage(message);
                         }
                     });
+                }, (error) => {
+                    console.error("Realtime listener error:", error);
                 });
         }
         
@@ -650,8 +669,17 @@
                 });
         }
         
-        function displayMessage(message) {
+        function displayMessage(message, messageId = null) {
+            // Create unique ID for the message element
+            const elementId = messageId ? `msg-${messageId}` : `msg-${Date.now()}`;
+            
+            // Check if this message is already displayed
+            if (document.getElementById(elementId)) {
+                return;
+            }
+            
             const messageElement = document.createElement('div');
+            messageElement.id = elementId;
             messageElement.classList.add('message');
             
             const isOutgoing = message.senderId === currentUser.uid;
@@ -664,6 +692,7 @@
                 messageElement.style.textAlign = 'center';
                 messageElement.style.fontStyle = 'italic';
                 messageElement.style.opacity = '0.8';
+                messageElement.style.maxWidth = '80%';
             }
             
             const bubble = document.createElement('div');
@@ -694,7 +723,7 @@
         
         function showNotification(title, body) {
             if ('Notification' in window && Notification.permission === 'granted') {
-                new Notification(title, { body: body, icon: 'https://example.com/icon.png' });
+                new Notification(title, { body: body });
             }
         }
         
