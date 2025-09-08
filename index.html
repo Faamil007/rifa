@@ -559,9 +559,11 @@
     // Set partner info based on current user
     if (currentUser.email === 'rinu@gmail.com') {
         partnerName = 'Faamil';
+        partnerId = 'Lpx8gfn5fzbAa7ZLh7gfxXPzX7v2'; // This identifies her messages
         document.getElementById('partnerAvatar').textContent = 'F';
     } else {
         partnerName = 'Rina';
+        partnerId = 'Fn3I5FUBINMnJ1y6sXAM6Zl9e3S2'; // This identifies your messages
         document.getElementById('partnerAvatar').textContent = 'R';
     }
     
@@ -649,29 +651,50 @@
         }
         
         function displayMessage(message) {
-            const messageElement = document.createElement('div');
-            messageElement.classList.add('message');
-            messageElement.classList.add(message.senderId === currentUser.uid ? 'outgoing' : 'incoming');
-            
-            const bubble = document.createElement('div');
-            bubble.classList.add('message-bubble');
-            bubble.textContent = message.text;
-            
-            const info = document.createElement('div');
-            info.classList.add('message-info');
-            
-            const time = new Date(message.timestamp);
-            const timeString = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            
-            info.innerHTML = `<span class="message-time">${timeString}</span>`;
-            
-            messageElement.appendChild(bubble);
-            messageElement.appendChild(info);
-            chatMessages.appendChild(messageElement);
-            
-            scrollToBottom();
-        }
-        
+    const messageElement = document.createElement('div');
+    messageElement.classList.add('message');
+    
+    // Determine if message is outgoing (current user) or incoming (partner)
+    const isOutgoing = message.senderId === currentUser.uid;
+    messageElement.classList.add(isOutgoing ? 'outgoing' : 'incoming');
+    
+    // Handle system messages differently
+    if (message.senderId === 'system') {
+        messageElement.classList.add('incoming');
+        messageElement.style.alignSelf = 'center';
+        messageElement.style.maxWidth = '90%';
+        messageElement.style.margin = '20px auto';
+        messageElement.style.textAlign = 'center';
+        messageElement.style.fontStyle = 'italic';
+        messageElement.style.opacity = '0.8';
+    }
+    
+    const bubble = document.createElement('div');
+    bubble.classList.add('message-bubble');
+    bubble.textContent = message.text;
+    
+    const info = document.createElement('div');
+    info.classList.add('message-info');
+    
+    const time = new Date(message.timestamp);
+    const timeString = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
+    // Show read status only for outgoing messages
+    if (isOutgoing) {
+        info.innerHTML = `
+            <span class="message-time">${timeString}</span>
+            <span class="message-status">${message.read ? '✓✓' : '✓'}</span>
+        `;
+    } else {
+        info.innerHTML = `<span class="message-time">${timeString}</span>`;
+    }
+    
+    messageElement.appendChild(bubble);
+    messageElement.appendChild(info);
+    chatMessages.appendChild(messageElement);
+    
+    scrollToBottom();
+}
         function scrollToBottom() {
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
