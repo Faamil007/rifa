@@ -549,34 +549,28 @@
         }
         
         function setupChat() {
-            console.log("Setting up chat for user:", currentUser.email);
-            loginContainer.classList.add('hidden');
-            chatContainer.classList.remove('hidden');
-            
-            // Find partner
-            const userEmail = currentUser.email;
-            let partnerEmail = null;
-            for (const email in EXCLUSIVE_USERS) {
-                if (email !== userEmail) {
-                    partnerEmail = email;
-                    break;
-                }
-            }
-            
-            if (partnerEmail) {
-                partnerId = EXCLUSIVE_USERS[partnerEmail].uid;
-                partnerName = EXCLUSIVE_USERS[partnerEmail].name;
-                
-                document.getElementById('partnerName').textContent = partnerName;
-                document.getElementById('partnerAvatar').textContent = EXCLUSIVE_USERS[partnerEmail].avatar;
-                
-                chatRoomId = [currentUser.uid, partnerId].sort().join('_');
-                console.log("Chat room ID:", chatRoomId);
-                
-                loadMessages();
-                setupRealtimeListeners();
-            }
-        }
+    console.log("Setting up chat for user:", currentUser.email);
+    loginContainer.classList.add('hidden');
+    chatContainer.classList.remove('hidden');
+    
+    // Use a fixed chat room ID that both users share
+    chatRoomId = "rina_faamil_chat_room";
+    
+    // Set partner info based on current user
+    if (currentUser.email === 'rinu@gmail.com') {
+        partnerName = 'Faamil';
+        document.getElementById('partnerAvatar').textContent = 'F';
+    } else {
+        partnerName = 'Rina';
+        document.getElementById('partnerAvatar').textContent = 'R';
+    }
+    
+    document.getElementById('partnerName').textContent = partnerName;
+    console.log("Chat room ID:", chatRoomId);
+    
+    loadMessages();
+    setupRealtimeListeners();
+}
         
         function loadMessages() {
             console.log("Loading messages for room:", chatRoomId);
