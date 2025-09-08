@@ -3,36 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rifa</title>
+    <title>Rifa Premium Chat</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-messaging-compat.js"></script>
     <style>
         :root {
             --primary-color: #128C7E;
+            --primary-dark: #075E54;
             --secondary-color: #25D366;
-            --background-color: #e6e6e6;
-            --chat-background: #ece5dd;
-            --message-out: #dcf8c6;
-            --message-in: #ffffff;
-            --text-color: #333333;
-            --light-text: #777777;
+            --accent-gold: #FFD700;
+            --accent-silver: #C0C0C0;
+            --background-color: #111b21;
+            --chat-background: #0b141a;
+            --message-out: #005c4b;
+            --message-in: #202c33;
+            --text-color: #e9edef;
+            --light-text: #8696a0;
+            --premium-gradient: linear-gradient(135deg, #FFD700 0%, #D4AF37 100%);
         }
         
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
         }
         
         body {
-            background-color: var(--background-color);
+            background: var(--background-color);
             height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
+            color: var(--text-color);
+        }
+        
+        .premium-badge {
+            background: var(--premium-gradient);
+            color: #000;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 10px;
         }
         
         .chat-container {
@@ -40,59 +54,82 @@
             max-width: 500px;
             height: 100vh;
             max-height: 800px;
-            background-color: white;
-            border-radius: 10px;
+            background: var(--chat-background);
+            border-radius: 12px;
             overflow: hidden;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
             display: flex;
             flex-direction: column;
+            border: 1px solid rgba(255, 215, 0, 0.2);
         }
         
         .chat-header {
-            background-color: var(--primary-color);
+            background: var(--primary-dark);
             color: white;
-            padding: 15px;
+            padding: 15px 20px;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         .user-info {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
         }
         
         .avatar {
-            width: 40px;
-            height: 40px;
+            width: 45px;
+            height: 45px;
             border-radius: 50%;
-            background-color: #ccc;
+            background: var(--premium-gradient);
             display: flex;
             justify-content: center;
             align-items: center;
             font-weight: bold;
-            color: white;
+            color: #000;
+            font-size: 18px;
+            border: 2px solid var(--accent-gold);
         }
         
         .presence {
             font-size: 0.8rem;
-            color: rgba(255, 255, 255, 0.8);
+            color: var(--secondary-color);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .online-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--secondary-color);
+            border-radius: 50%;
+            display: inline-block;
         }
         
         .chat-messages {
             flex: 1;
-            padding: 15px;
+            padding: 20px;
             overflow-y: auto;
-            background-color: var(--chat-background);
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80' viewBox='0 0 80 80'%3E%3Cg fill='%23d4d4d4' fill-opacity='0.4'%3E%3Cpath fill-rule='evenodd' d='M0 0h40v40H0V0zm40 40h40v40H40V40zm0-40h2l-2 2V0zm0 4l4-4h2l-6 6V4zm0 4l8-8h2L40 10V8zm0 4L52 0h2L40 14v-2zm0 4L56 0h2L40 18v-2zm0 4L60 0h2L40 22v-2zm0 4L64 0h2L40 26v-2zm0 4L68 0h2L40 30v-2zm0 4L72 0h2L40 34v-2zm0 4L76 0h2L40 38v-2zm0 4L80 0v2L42 40h-2zm4 0L80 4v2L46 40h-2zm4 0L80 8v2L50 40h-2zm4 0l28-28v2L54 40h-2zm4 0l24-24v2L58 40h-2zm4 0l20-20v2L62 40h-2zm4 0l16-16v2L66 40h-2zm4 0l12-12v2L70 40h-2zm4 0l8-8v2l-6 6h-2zm4 0l4-4v2l-2 2h-2z'/%3E%3C/g%3E%3C/svg%3E");
+            background: var(--chat-background);
+            background-image: 
+                radial-gradient(circle at 25% 25%, rgba(255, 215, 0, 0.03) 0%, transparent 50%),
+                radial-gradient(circle at 75% 75%, rgba(255, 215, 0, 0.03) 0%, transparent 50%);
         }
         
         .message {
-            max-width: 80%;
-            margin-bottom: 15px;
+            max-width: 85%;
+            margin-bottom: 20px;
             display: flex;
             flex-direction: column;
+            animation: fadeIn 0.3s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
         .message.outgoing {
@@ -105,141 +142,274 @@
         }
         
         .message-bubble {
-            padding: 10px 15px;
-            border-radius: 10px;
+            padding: 12px 18px;
+            border-radius: 18px;
             position: relative;
             word-wrap: break-word;
+            line-height: 1.4;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
         
         .message.outgoing .message-bubble {
-            background-color: var(--message-out);
-            border-top-right-radius: 0;
+            background: var(--message-out);
+            border-bottom-right-radius: 5px;
+            color: var(--text-color);
         }
         
         .message.incoming .message-bubble {
-            background-color: var(--message-in);
-            border-top-left-radius: 0;
-            box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
+            background: var(--message-in);
+            border-bottom-left-radius: 5px;
+            color: var(--text-color);
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
         
         .message-info {
             font-size: 0.7rem;
             color: var(--light-text);
-            margin-top: 5px;
+            margin-top: 6px;
             display: flex;
             justify-content: flex-end;
-            gap: 5px;
+            gap: 8px;
+            align-items: center;
+        }
+        
+        .message-status {
+            font-size: 0.9em;
         }
         
         .typing-indicator {
-            padding: 10px;
-            font-style: italic;
+            padding: 15px 20px;
             color: var(--light-text);
             display: none;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .typing-dots {
+            display: flex;
+            gap: 3px;
+        }
+        
+        .typing-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--secondary-color);
+            border-radius: 50%;
+            animation: typingAnimation 1.4s infinite ease-in-out;
+        }
+        
+        .typing-dot:nth-child(1) { animation-delay: 0s; }
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+        
+        @keyframes typingAnimation {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-5px); }
+        }
+        
+        .chat-input-container {
+            padding: 15px 20px;
+            background: var(--message-in);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
         }
         
         .chat-input {
             display: flex;
-            padding: 10px;
-            background-color: white;
-            border-top: 1px solid #ddd;
+            gap: 12px;
+            align-items: center;
         }
         
         .message-input {
             flex: 1;
-            padding: 12px;
+            padding: 14px 20px;
             border: none;
-            border-radius: 20px;
-            background-color: var(--background-color);
+            border-radius: 25px;
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-color);
             outline: none;
+            font-size: 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .message-input:focus {
+            background: rgba(255, 255, 255, 0.12);
+            box-shadow: 0 0 0 2px rgba(37, 211, 102, 0.2);
         }
         
         .send-button {
-            background-color: var(--primary-color);
+            background: var(--primary-color);
             color: white;
             border: none;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            margin-left: 10px;
+            width: 48px;
+            height: 48px;
             cursor: pointer;
             display: flex;
             justify-content: center;
             align-items: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(18, 140, 126, 0.3);
+        }
+        
+        .send-button:hover {
+            background: var(--secondary-color);
+            transform: scale(1.05);
+        }
+        
+        .send-button:active {
+            transform: scale(0.95);
         }
         
         .login-container {
             width: 100%;
-            max-width: 400px;
-            padding: 20px;
-            background-color: white;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            max-width: 420px;
+            padding: 30px;
+            background: var(--message-in);
+            border-radius: 16px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 215, 0, 0.2);
+        }
+        
+        .app-title {
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 28px;
+            font-weight: 300;
+            background: var(--premium-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .app-subtitle {
+            text-align: center;
+            color: var(--light-text);
+            margin-bottom: 30px;
+            font-size: 14px;
         }
         
         .login-form {
             display: flex;
             flex-direction: column;
-            gap: 15px;
+            gap: 20px;
         }
         
         .form-group {
             display: flex;
             flex-direction: column;
-            gap: 5px;
+            gap: 8px;
         }
         
         .form-group label {
             font-weight: 500;
             color: var(--text-color);
+            font-size: 14px;
         }
         
         .form-group input {
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
+            padding: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.07);
+            color: var(--text-color);
             outline: none;
+            font-size: 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-group input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px rgba(18, 140, 126, 0.2);
         }
         
         .login-button {
-            background-color: var(--primary-color);
-            color: white;
+            background: var(--premium-gradient);
+            color: #000;
             border: none;
-            padding: 12px;
-            border-radius: 5px;
+            padding: 16px;
+            border-radius: 12px;
             cursor: pointer;
-            font-weight: bold;
+            font-weight: 600;
+            font-size: 16px;
             margin-top: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
         }
         
         .login-button:hover {
-            background-color: #0C7A68;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
+        }
+        
+        .login-button:active {
+            transform: translateY(0);
         }
         
         .error-message {
-            color: #ff3860;
+            color: #ff6b6b;
             font-size: 0.9rem;
             margin-top: 5px;
+            text-align: center;
+            padding: 10px;
+            background: rgba(255, 107, 107, 0.1);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 107, 107, 0.2);
         }
         
         .hidden {
             display: none;
         }
+        
+        .message-time {
+            font-size: 0.7rem;
+            opacity: 0.8;
+        }
+        
+        /* Scrollbar styling */
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .chat-messages::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 3px;
+        }
+        
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 3px;
+        }
+        
+        .chat-messages::-webkit-scrollbar-thumb:hover {
+            background: var(--secondary-color);
+        }
+        
+        /* Premium animations */
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0.4); }
+            70% { box-shadow: 0 0 0 10px rgba(255, 215, 0, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(255, 215, 0, 0); }
+        }
+        
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
     </style>
 </head>
 <body>
     <div id="loginContainer" class="login-container">
-        <h2>Rina ↔ Faamil Private Chat</h2>
+        <h1 class="app-title">Rifa Premium Chat</h1>
+        <p class="app-subtitle">Exclusive messaging for Rina & Faamil</p>
         <form id="loginForm" class="login-form">
             <div class="form-group">
                 <label for="email">Email</label>
-                <input type="email" id="email" required placeholder="Your email">
+                <input type="email" id="email" required placeholder="your@email.com">
             </div>
             <div class="form-group">
                 <label for="password">Password</label>
                 <input type="password" id="password" required placeholder="Your password">
             </div>
-            <button type="submit" class="login-button">Login</button>
+            <button type="submit" class="login-button">Unlock Premium Chat</button>
             <div id="loginError" class="error-message hidden"></div>
         </form>
     </div>
@@ -249,8 +419,8 @@
             <div class="user-info">
                 <div class="avatar" id="partnerAvatar">F</div>
                 <div>
-                    <div id="partnerName">Faamil</div>
-                    <div id="partnerStatus" class="presence">Online</div>
+                    <div id="partnerName">Faamil <span class="premium-badge">PREMIUM</span></div>
+                    <div id="partnerStatus" class="presence"><span class="online-dot"></span> Online</div>
                 </div>
             </div>
         </div>
@@ -259,31 +429,38 @@
             <!-- Messages will be inserted here -->
         </div>
         
-        <div id="typingIndicator" class="typing-indicator">
-            <span id="typingText"></span> is typing...
+        <div id="typingIndicator" class="typing-indicator hidden">
+            <span id="typingText"></span>
+            <div class="typing-dots">
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            </div>
         </div>
         
-        <div class="chat-input">
-            <input type="text" id="messageInput" class="message-input" placeholder="Type a message...">
-            <button id="sendButton" class="send-button">
-                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="22" y1="2" x2="11" y2="13"></line>
-                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                </svg>
-            </button>
+        <div class="chat-input-container">
+            <div class="chat-input">
+                <input type="text" id="messageInput" class="message-input" placeholder="Type a premium message...">
+                <button id="sendButton" class="send-button pulse-animation">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                </button>
+            </div>
         </div>
     </div>
 
     <script>
-        // Firebase configuration - replace with your actual config
+        // Firebase configuration
         const firebaseConfig = {
-  apiKey: "AIzaSyAEvywD1zXdcsvvfJpULp3rrWVo51Okc_w",
-  authDomain: "rifa-a3547.firebaseapp.com",
-  projectId: "rifa-a3547",
-  storageBucket: "rifa-a3547.firebasestorage.app",
-  messagingSenderId: "69916935947",
-  appId: "1:69916935947:web:46c9d34895d7c5b889840e"
-};
+            apiKey: "AIzaSyAEvywD1zXdcsvvfJpULp3rrWVo51Okc_w",
+            authDomain: "rifa-a3547.firebaseapp.com",
+            projectId: "rifa-a3547",
+            storageBucket: "rifa-a3547.firebasestorage.app",
+            messagingSenderId: "69916935947",
+            appId: "1:69916935947:web:46c9d34895d7c5b889840e"
+        };
         
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
@@ -308,9 +485,10 @@
         let partnerId = null;
         let partnerName = null;
         let stopTypingTimeout = null;
+        let messagesListener = null;
         
-        // Predefined users (in a real app, these would be in your database)
-        const users = {
+        // Exclusive users - Only these two can access the chat
+        const EXCLUSIVE_USERS = {
             'rina@example.com': { 
                 password: 'rinaPassword123', 
                 uid: 'userRina', 
@@ -329,11 +507,15 @@
         function init() {
             // Check if user is already logged in
             auth.onAuthStateChanged((user) => {
-                if (user) {
+                if (user && EXCLUSIVE_USERS[user.email]) {
                     currentUser = user;
                     setupChat();
                 } else {
                     showLogin();
+                    if (user) {
+                        // Log out if user is not in exclusive list
+                        auth.signOut();
+                    }
                 }
             });
             
@@ -358,9 +540,15 @@
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             
-            // Simple validation against our predefined users
-            if (users[email] && users[email].password === password) {
-                // Simulate Firebase auth sign in
+            // Check if user is in exclusive list
+            if (!EXCLUSIVE_USERS[email]) {
+                showLoginError('Access denied. Exclusive premium users only.');
+                return;
+            }
+            
+            // Validate credentials
+            if (EXCLUSIVE_USERS[email].password === password) {
+                // Sign in with Firebase
                 auth.signInWithEmailAndPassword(email, password)
                     .then((userCredential) => {
                         currentUser = userCredential.user;
@@ -368,10 +556,10 @@
                         setupChat();
                     })
                     .catch((error) => {
-                        showLoginError('Invalid login credentials');
+                        showLoginError('Authentication failed. Please try again.');
                     });
             } else {
-                showLoginError('Invalid email or password');
+                showLoginError('Invalid credentials for premium access.');
             }
         }
         
@@ -400,12 +588,12 @@
             // Determine who the partner is
             const userEmail = currentUser.email;
             partnerId = userEmail === 'rina@example.com' ? 'userFaamil' : 'userRina';
-            partnerName = users[userEmail === 'rina@example.com' ? 'faamil@example.com' : 'rina@example.com'].name;
+            partnerName = EXCLUSIVE_USERS[userEmail === 'rina@example.com' ? 'faamil@example.com' : 'rina@example.com'].name;
             
             // Update UI with partner info
             document.getElementById('partnerName').textContent = partnerName;
             document.getElementById('partnerAvatar').textContent = 
-                users[userEmail === 'rina@example.com' ? 'faamil@example.com' : 'rina@example.com'].avatar;
+                EXCLUSIVE_USERS[userEmail === 'rina@example.com' ? 'faamil@example.com' : 'rina@example.com'].avatar;
             
             // Generate a consistent chat room ID
             chatRoomId = [currentUser.uid, partnerId].sort().join('_');
@@ -415,102 +603,56 @@
             
             // Set up realtime listeners
             setupRealtimeListeners();
-            
-            // Set up push notifications
-            setupPushNotifications();
         }
         
         // Load previous messages from Firestore
         function loadMessages() {
-            // In a real app, you would query Firestore
-            // For this demo, we'll simulate some initial messages
-            const initialMessages = [
-                {
-                    text: 'Hey there! How are you?',
-                    senderId: partnerId,
-                    timestamp: Date.now() - 3600000,
-                    read: true
-                },
-                {
-                    text: "I'm doing great! Just working on this new chat app.",
-                    senderId: currentUser.uid,
-                    timestamp: Date.now() - 3500000,
-                    read: true
-                },
-                {
-                    text: 'That sounds interesting. Tell me more about it!',
-                    senderId: partnerId,
-                    timestamp: Date.now() - 3400000,
-                    read: true
-                }
-            ];
+            // Clear existing messages
+            chatMessages.innerHTML = '';
             
-            // Display the initial messages
-            initialMessages.forEach(message => {
-                displayMessage(message);
-            });
+            // Add welcome message
+            const welcomeMessage = {
+                text: `Welcome to your exclusive premium chat, ${currentUser.email.split('@')[0]}! 🎉`,
+                senderId: 'system',
+                timestamp: Date.now(),
+                read: true
+            };
+            displayMessage(welcomeMessage);
             
-            // Scroll to bottom
-            scrollToBottom();
-        }
-        
-        // Set up realtime listeners for new messages and typing indicators
-        function setupRealtimeListeners() {
-            // In a real app, you would set up Firestore listeners
-            // For this demo, we'll simulate a partner response after a delay
-            setTimeout(() => {
-                const simulatedMessage = {
-                    text: 'This looks really good! I like the clean design.',
-                    senderId: partnerId,
-                    timestamp: Date.now(),
-                    read: false
-                };
-                
-                displayMessage(simulatedMessage);
-                simulateTyping(partnerName, false);
-                
-                // Show notification if app is not focused
-                if (document.hidden) {
-                    showNotification('New message from ' + partnerName, simulatedMessage.text);
-                }
-            }, 5000);
-        }
-        
-        // Set up push notifications
-        function setupPushNotifications() {
-            // Request permission for notifications
-            if ('Notification' in window) {
-                Notification.requestPermission().then(permission => {
-                    if (permission === 'granted') {
-                        console.log('Notification permission granted.');
-                    }
+            // Load actual messages from Firestore
+            db.collection('messages')
+                .where('roomId', '==', chatRoomId)
+                .orderBy('timestamp', 'asc')
+                .get()
+                .then((querySnapshot) => {
+                    querySnapshot.forEach((doc) => {
+                        displayMessage(doc.data());
+                    });
+                    scrollToBottom();
+                })
+                .catch((error) => {
+                    console.log('Error loading messages:', error);
                 });
-            }
-            
-            // Handle background messages
-            messaging.onBackgroundMessage((payload) => {
-                console.log('Received background message: ', payload);
-                const notificationTitle = payload.notification.title;
-                const notificationOptions = {
-                    body: payload.notification.body,
-                    icon: '/icon.png'
-                };
-                
-                self.registration.showNotification(notificationTitle, notificationOptions);
-            });
         }
         
-        // Show a notification
-        function showNotification(title, body) {
-            if ('Notification' in window && Notification.permission === 'granted') {
-                new Notification(title, { body, icon: '/icon.png' });
-            }
+        // Set up realtime listeners for new messages
+        function setupRealtimeListeners() {
+            // Listen for new messages
+            messagesListener = db.collection('messages')
+                .where('roomId', '==', chatRoomId)
+                .orderBy('timestamp', 'asc')
+                .onSnapshot((querySnapshot) => {
+                    querySnapshot.docChanges().forEach((change) => {
+                        if (change.type === 'added') {
+                            displayMessage(change.doc.data());
+                        }
+                    });
+                });
         }
         
         // Handle typing indicator
         function handleTyping() {
-            // In a real app, you would update a typing status in Firestore
-            simulateTyping(users[currentUser.email].name, true);
+            simulateTyping(EXCLUSIVE_USERS[currentUser.email].name, true);
             
             // Clear previous timeout
             if (stopTypingTimeout) {
@@ -519,17 +661,17 @@
             
             // Set timeout to stop typing indicator
             stopTypingTimeout = setTimeout(() => {
-                simulateTyping(users[currentUser.email].name, false);
+                simulateTyping(EXCLUSIVE_USERS[currentUser.email].name, false);
             }, 2000);
         }
         
-        // Simulate typing indicator (for demo purposes)
+        // Simulate typing indicator
         function simulateTyping(name, isTyping) {
             if (isTyping) {
                 typingText.textContent = name;
-                typingIndicator.style.display = 'block';
+                typingIndicator.classList.remove('hidden');
             } else {
-                typingIndicator.style.display = 'none';
+                typingIndicator.classList.add('hidden');
             }
         }
         
@@ -543,50 +685,20 @@
             const message = {
                 text: messageText,
                 senderId: currentUser.uid,
+                roomId: chatRoomId,
                 timestamp: Date.now(),
                 read: false
             };
             
-            // In a real app, you would add this to Firestore
-            // For this demo, we'll just display it immediately
-            displayMessage(message);
-            
-            // Clear input
-            messageInput.value = '';
-            
-            // Scroll to bottom
-            scrollToBottom();
-            
-            // Simulate partner response after a delay
-            setTimeout(() => {
-                const responses = [
-                    "That's interesting!",
-                    "I see what you mean.",
-                    "Tell me more about that.",
-                    "I agree with you.",
-                    "That makes sense."
-                ];
-                
-                const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-                
-                const simulatedMessage = {
-                    text: randomResponse,
-                    senderId: partnerId,
-                    timestamp: Date.now(),
-                    read: false
-                };
-                
-                displayMessage(simulatedMessage);
-                simulateTyping(partnerName, false);
-                
-                // Show notification if app is not focused
-                if (document.hidden) {
-                    showNotification('New message from ' + partnerName, simulatedMessage.text);
-                }
-            }, 2000);
-            
-            // Show typing indicator while partner "types"
-            simulateTyping(partnerName, true);
+            // Add to Firestore
+            db.collection('messages').add(message)
+                .then(() => {
+                    // Clear input
+                    messageInput.value = '';
+                })
+                .catch((error) => {
+                    console.error('Error sending message:', error);
+                });
         }
         
         // Display a message in the chat
@@ -596,6 +708,15 @@
             
             if (message.senderId === currentUser.uid) {
                 messageElement.classList.add('outgoing');
+            } else if (message.senderId === 'system') {
+                // System message
+                messageElement.classList.add('incoming');
+                messageElement.style.alignSelf = 'center';
+                messageElement.style.maxWidth = '90%';
+                messageElement.style.margin = '20px auto';
+                messageElement.style.textAlign = 'center';
+                messageElement.style.fontStyle = 'italic';
+                messageElement.style.opacity = '0.8';
             } else {
                 messageElement.classList.add('incoming');
             }
@@ -611,17 +732,15 @@
             const timeString = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             
             info.innerHTML = `
-                <span>${timeString}</span>
+                <span class="message-time">${timeString}</span>
                 ${message.senderId === currentUser.uid ? 
-                    `<span>${message.read ? '✓✓' : '✓'}</span>` : ''}
+                    `<span class="message-status">${message.read ? '✓✓' : '✓'}</span>` : ''}
             `;
             
             messageElement.appendChild(bubble);
             messageElement.appendChild(info);
             
             chatMessages.appendChild(messageElement);
-            
-            // Scroll to bottom if the new message is at the end
             scrollToBottom();
         }
         
