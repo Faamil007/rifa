@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rifa Premium Chat</title>
+    <title>Rifa's Secret Chat 😜</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
@@ -398,8 +398,8 @@
 </head>
 <body>
     <div id="loginContainer" class="login-container">
-        <h1 class="app-title">Rifa Premium Chat</h1>
-        <p class="app-subtitle">Exclusive messaging for Rina & Faamil</p>
+        <h1 class="app-title">Rifa's Secret Chat 😜'</h1>
+        <p class="app-subtitle">Welcome back my Angel💓😇</p>
         <form id="loginForm" class="login-form">
             <div class="form-group">
                 <label for="email">Email</label>
@@ -409,7 +409,7 @@
                 <label for="password">Password</label>
                 <input type="password" id="password" required placeholder="Your password">
             </div>
-            <button type="submit" class="login-button">Unlock Premium Chat</button>
+            <button type="submit" class="login-button">Let's Go 🥹</button>
             <div id="loginError" class="error-message hidden"></div>
         </form>
     </div>
@@ -419,7 +419,7 @@
             <div class="user-info">
                 <div class="avatar" id="partnerAvatar">F</div>
                 <div>
-                    <div id="partnerName">Faamil <span class="premium-badge">PREMIUM</span></div>
+                    <div id="partnerName">Faamil </div>
                     <div id="partnerStatus" class="presence"><span class="online-dot"></span> Online</div>
                 </div>
             </div>
@@ -440,7 +440,7 @@
         
         <div class="chat-input-container">
             <div class="chat-input">
-                <input type="text" id="messageInput" class="message-input" placeholder="Type a premium message...">
+                <input type="text" id="messageInput" class="message-input" placeholder="Send a Message">
                 <button id="sendButton" class="send-button pulse-animation">
                     <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <line x1="22" y1="2" x2="11" y2="13"></line>
@@ -515,7 +515,7 @@
             const password = document.getElementById('password').value;
             
             if (!EXCLUSIVE_USERS[email]) {
-                showLoginError('Access denied. Exclusive users only.');
+                showLoginError('Access denied.');
                 return;
             }
             
@@ -530,7 +530,7 @@
                         showLoginError('Authentication failed: ' + error.message);
                     });
             } else {
-                showLoginError('Invalid credentials.');
+                showLoginError('Wrong Password vaave... Try Again.');
             }
         }
         
@@ -580,7 +580,7 @@
             
             // Welcome message
             displayMessage({
-                text: `Welcome to your exclusive chat, ${currentUser.email.split('@')[0]}!`,
+                text: `Welcome my lovely ${currentUser.email.split('@')[0]}!`,
                 senderId: 'system',
                 timestamp: Date.now(),
                 read: true
