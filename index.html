@@ -475,72 +475,47 @@
         const chatMessages = document.getElementById('chatMessages');
         const messageInput = document.getElementById('messageInput');
         const sendButton = document.getElementById('sendButton');
-        const partnerStatus = document.getElementById('partnerStatus');
-        const typingIndicator = document.getElementById('typingIndicator');
-        const typingText = document.getElementById('typingText');
         
         // Global variables
         let currentUser = null;
         let chatRoomId = null;
         let partnerId = null;
         let partnerName = null;
-        let stopTypingTimeout = null;
-        let messagesListener = null;
         
-        // Exclusive users - Only these two can access the chat
+        // Exclusive users
         const EXCLUSIVE_USERS = {
-            'rinu@gmail.com': { 
-                password: '123456', 
-                uid: 'userRina', 
-                name: 'Rina',
-                avatar: 'R'
-            },
-            'faamil@gmail.com': { 
-                password: '123456', 
-                uid: 'userFaamil', 
-                name: 'Faamil',
-                avatar: 'F'
-            }
+            'rinu@gmail.com': { password: '123456', uid: 'userRina', name: 'Rina', avatar: 'R' },
+            'faamil@gmail.com': { password: '123456', uid: 'userFaamil', name: 'Faamil', avatar: 'F' }
         };
         
         // Initialize the application
         function init() {
-            // Check if user is already logged in
+            console.log("Initializing app...");
             auth.onAuthStateChanged((user) => {
                 if (user && EXCLUSIVE_USERS[user.email]) {
+                    console.log("User already logged in:", user.email);
                     currentUser = user;
                     setupChat();
                 } else {
+                    console.log("No user logged in or not authorized");
                     showLogin();
-                    if (user) {
-                        auth.signOut();
-                    }
                 }
             });
             
-            // Set up login form
             loginForm.addEventListener('submit', handleLogin);
-            
-            // Set up message sending
             sendButton.addEventListener('click', sendMessage);
             messageInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    sendMessage();
-                }
+                if (e.key === 'Enter') sendMessage();
             });
-            
-            // Set up typing indicator
-            messageInput.addEventListener('input', handleTyping);
         }
         
-        // Handle user login
         function handleLogin(e) {
             e.preventDefault();
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             
             if (!EXCLUSIVE_USERS[email]) {
-                showLoginError('Access denied. Exclusive premium users only.');
+                showLoginError('Access denied. Exclusive users only.');
                 return;
             }
             
@@ -552,40 +527,34 @@
                         setupChat();
                     })
                     .catch((error) => {
-                        showLoginError('Authentication failed. Please try again.');
-                        console.error('Login error:', error);
+                        showLoginError('Authentication failed: ' + error.message);
                     });
             } else {
-                showLoginError('Invalid credentials for premium access.');
+                showLoginError('Invalid credentials.');
             }
         }
         
-        // Show login error message
         function showLoginError(message) {
             loginError.textContent = message;
             loginError.classList.remove('hidden');
         }
         
-        // Hide login error message
         function hideLoginError() {
             loginError.classList.add('hidden');
         }
         
-        // Show login screen
         function showLogin() {
             loginContainer.classList.remove('hidden');
             chatContainer.classList.add('hidden');
         }
         
-        // Set up the chat after login
         function setupChat() {
+            console.log("Setting up chat for user:", currentUser.email);
             loginContainer.classList.add('hidden');
             chatContainer.classList.remove('hidden');
             
-            // Determine who the partner is based on current user
+            // Find partner
             const userEmail = currentUser.email;
-            
-            // Find the partner (the other user in EXCLUSIVE_USERS)
             let partnerEmail = null;
             for (const email in EXCLUSIVE_USERS) {
                 if (email !== userEmail) {
@@ -598,96 +567,70 @@
                 partnerId = EXCLUSIVE_USERS[partnerEmail].uid;
                 partnerName = EXCLUSIVE_USERS[partnerEmail].name;
                 
-                // Update UI with partner info
                 document.getElementById('partnerName').textContent = partnerName;
                 document.getElementById('partnerAvatar').textContent = EXCLUSIVE_USERS[partnerEmail].avatar;
                 
-                // Generate a consistent chat room ID
                 chatRoomId = [currentUser.uid, partnerId].sort().join('_');
+                console.log("Chat room ID:", chatRoomId);
                 
-                // Load previous messages
                 loadMessages();
-                
-                // Set up realtime listeners
                 setupRealtimeListeners();
-            } else {
-                showLoginError('Could not find chat partner.');
-                auth.signOut();
             }
         }
         
-        // Load previous messages from Firestore
         function loadMessages() {
+            console.log("Loading messages for room:", chatRoomId);
             chatMessages.innerHTML = '';
             
             // Welcome message
-            const welcomeMessage = {
-                text: `Welcome to your exclusive premium chat, ${currentUser.email.split('@')[0]}! 🎉`,
+            displayMessage({
+                text: `Welcome to your exclusive chat, ${currentUser.email.split('@')[0]}!`,
                 senderId: 'system',
                 timestamp: Date.now(),
                 read: true
-            };
-            displayMessage(welcomeMessage);
+            });
             
-            // Load messages from Firestore
+            // Try to load from Firestore
             db.collection('messages')
                 .where('roomId', '==', chatRoomId)
                 .orderBy('timestamp', 'asc')
                 .get()
                 .then((querySnapshot) => {
+                    console.log("Found", querySnapshot.size, "messages in Firestore");
+                    if (querySnapshot.size === 0) {
+                        console.log("No messages found, this is normal for first use");
+                    }
                     querySnapshot.forEach((doc) => {
                         displayMessage(doc.data());
                     });
-                    scrollToBottom();
                 })
                 .catch((error) => {
-                    console.error('Error loading messages:', error);
+                    console.error("Firestore error:", error);
+                    showLoginError('Database error: ' + error.message);
                 });
         }
         
-        // Set up realtime listeners for new messages
         function setupRealtimeListeners() {
-            messagesListener = db.collection('messages')
+            console.log("Setting up realtime listener for room:", chatRoomId);
+            
+            db.collection('messages')
                 .where('roomId', '==', chatRoomId)
                 .orderBy('timestamp', 'asc')
                 .onSnapshot((querySnapshot) => {
+                    console.log("Realtime update received:", querySnapshot.size, "messages");
                     querySnapshot.docChanges().forEach((change) => {
                         if (change.type === 'added') {
+                            console.log("New message:", change.doc.data());
                             displayMessage(change.doc.data());
                         }
                     });
                 }, (error) => {
-                    console.error('Error in realtime listener:', error);
+                    console.error("Realtime listener error:", error);
                 });
         }
         
-        // Handle typing indicator
-        function handleTyping() {
-            simulateTyping(EXCLUSIVE_USERS[currentUser.email].name, true);
-            
-            if (stopTypingTimeout) {
-                clearTimeout(stopTypingTimeout);
-            }
-            
-            stopTypingTimeout = setTimeout(() => {
-                simulateTyping(EXCLUSIVE_USERS[currentUser.email].name, false);
-            }, 2000);
-        }
-        
-        // Simulate typing indicator
-        function simulateTyping(name, isTyping) {
-            if (isTyping) {
-                typingText.textContent = name;
-                typingIndicator.classList.remove('hidden');
-            } else {
-                typingIndicator.classList.add('hidden');
-            }
-        }
-        
-        // Send a new message
         function sendMessage() {
             const messageText = messageInput.value.trim();
-            
             if (messageText === '') return;
             
             const message = {
@@ -698,34 +641,23 @@
                 read: false
             };
             
+            console.log("Sending message:", message);
+            
             db.collection('messages').add(message)
                 .then(() => {
+                    console.log("Message sent successfully");
                     messageInput.value = '';
                 })
                 .catch((error) => {
-                    console.error('Error sending message:', error);
-                    alert('Error sending message: ' + error.message);
+                    console.error("Error sending message:", error);
+                    alert('Send error: ' + error.message);
                 });
         }
         
-        // Display a message in the chat
         function displayMessage(message) {
             const messageElement = document.createElement('div');
             messageElement.classList.add('message');
-            
-            if (message.senderId === currentUser.uid) {
-                messageElement.classList.add('outgoing');
-            } else if (message.senderId === 'system') {
-                messageElement.classList.add('incoming');
-                messageElement.style.alignSelf = 'center';
-                messageElement.style.maxWidth = '90%';
-                messageElement.style.margin = '20px auto';
-                messageElement.style.textAlign = 'center';
-                messageElement.style.fontStyle = 'italic';
-                messageElement.style.opacity = '0.8';
-            } else {
-                messageElement.classList.add('incoming');
-            }
+            messageElement.classList.add(message.senderId === currentUser.uid ? 'outgoing' : 'incoming');
             
             const bubble = document.createElement('div');
             bubble.classList.add('message-bubble');
@@ -737,25 +669,19 @@
             const time = new Date(message.timestamp);
             const timeString = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             
-            info.innerHTML = `
-                <span class="message-time">${timeString}</span>
-                ${message.senderId === currentUser.uid ? 
-                    `<span class="message-status">${message.read ? '✓✓' : '✓'}</span>` : ''}
-            `;
+            info.innerHTML = `<span class="message-time">${timeString}</span>`;
             
             messageElement.appendChild(bubble);
             messageElement.appendChild(info);
-            
             chatMessages.appendChild(messageElement);
+            
             scrollToBottom();
         }
         
-        // Scroll chat to the bottom
         function scrollToBottom() {
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
         
-        // Initialize the app when the DOM is loaded
         document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
