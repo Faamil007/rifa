@@ -720,13 +720,6 @@
             
             scrollToBottom();
         }
-        
-        function showNotification(title, body) {
-    if ('Notification' in window && Notification.permission === 'granted') {
-        // Just show visual notification without sound
-        new Notification(title, { body: body });
-    }
-}
     </script>
 </body>
 </html>
