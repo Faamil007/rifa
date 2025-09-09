@@ -504,29 +504,35 @@
         }
         
         function handleLogin(e) {
-            e.preventDefault();
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            
-            if (!USER_CREDENTIALS[email]) {
-                showLoginError('Access denied. Only special people allowed 😉');
-                return;
-            }
-            
-            if (USER_CREDENTIALS[email].password === password) {
-                auth.signInWithEmailAndPassword(email, password)
-                    .then((userCredential) => {
-                        currentUser = userCredential.user;
-                        hideLoginError();
-                        setupChat();
-                    })
-                    .catch((error) => {
-                        showLoginError('Login failed: ' + error.message);
-                    });
-            } else {
-                showLoginError('Wrong password! Try again ❤️');
-            }
-        }
+    e.preventDefault();
+    const email = document.getElementById('email').value.toLowerCase().trim(); // Convert to lowercase
+    const password = document.getElementById('password').value;
+    
+    // Check if email exists in any case
+    const emailKey = Object.keys(USER_CREDENTIALS).find(
+        key => key.toLowerCase() === email.toLowerCase()
+    );
+    
+    if (!emailKey) {
+        showLoginError('Access denied. Only special people allowed 😉');
+        return;
+    }
+    
+    if (USER_CREDENTIALS[emailKey].password === password) {
+        auth.signInWithEmailAndPassword(emailKey, password) // Use the original case email
+            .then((userCredential) => {
+                currentUser = userCredential.user;
+                hideLoginError();
+                setupChat();
+            })
+            .catch((error) => {
+                showLoginError('Login failed: ' + error.message);
+                console.error('Login error:', error);
+            });
+    } else {
+        showLoginError('Wrong password! Try again ❤️');
+    }
+}
         
         function showLoginError(message) {
             loginError.textContent = message;
